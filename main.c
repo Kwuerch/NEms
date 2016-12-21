@@ -10,8 +10,8 @@ static uint16_t count = 0; // Program Counter
 static uint16_t acc   = 0; // Accumulator
 static uint16_t xReg  = 0; // X Register
 static uint16_t yReg  = 0; // Y Register
-static uint16_t sReg  = 0; // Status Register
 static uint16_t stPr  = 0; // Stack Pointer
+static uint8_t sReg  = 0; // Status Register
 
 static void execute( uint16_t instruction );
 static uint16_t *parseRomFile( char *filename );
@@ -41,117 +41,12 @@ static void execute(uint16_t instruction){
     // Top 8 bits of instruction store instruction type
     switch((uint8_t)((instruction >> 8) & 0xFF)){
 
-        case 0x00: // BRK impl
-        break;
-
-        case 0x01: // ORA x, ind
-        break;
-
-        case 0x05: // ORA zpg
-        break;
-
-        case 0x06: // ASL zpg
-        break;
-
-        case 0x08: // PHP impl
-        break;
-
-        case 0x09: // ORA #
-        break;
-
-        case 0x0A: // ASL a 
-        break;
-
-        case 0x0D: // ORA abs
-        break;
-
-        case 0x0E: // ASL abs
-        break;
-
-        case 0x10: // BPL rel
-        break;
-        
-        case 0x11: // ORA ind, Y
-        break;
-
-        case 0x15: // ORA zpg, x
-        break;
-
-        case 0x16: // ASL zpg, x
-        break;
-
-        case 0x18: // CLC impl
-        break;
-
-        case 0x19: // ORA abs, y
-        break;
-        
-        case 0x1D: // ORA abs, x
-        break;
-
-        case 0x1E: // ASL abs, x
-        break;
-
-        case 0x20: // JSR abs
-        break;
-
-        case 0x21: // AND x, ind
-        break;
-
-        case 0x24: // BIT zpg
-        break;
-
-        case 0x25: // AND zpg
-        break;
-
-        case 0x26: // ROL zpg
-        break;
-
-        case 0x28: // PLP impl
-        break;
-
-        case 0x29: // AND #
-        break;
-
-        case 0x2A: // ROL A
-        break;
-
-        case 0x2C: /// BIT abs
-        break;
-    
-        case 0x2D: // AND abs
-        break;
-
-        case 0x2E: // ROL abs
-        break;
-
-        case 0x30: // BMI rel
-        break;
-
-        case 0x31: // AND ind, y
-        break;
-
-        case 0x35: // AND zpg, x
-        break;
-        
-        case 0x36: // ROL zpg, x
-        break;
-
-        case 0x38: // SEC impl
-        break;
-
-        case 0x39: // AND abs, y
-        break;
-
-        case 0x3D: // AND abs, x
-        break;
-
-        case 0x3E: // ROL abs, x
-        break;
-
         /** 
          * ADC - Add Memory to Accumulator with Carry
          * A + M + C -> A, C
+         *
+         * N Z C I D V
+         * + + + - - +
          **/
 
         // Immediate
@@ -190,11 +85,195 @@ static void execute(uint16_t instruction){
         /**
          * AND - AND Memory with Accumulator
          * A AND M -> A
+         *
+         * N Z C I D V
+         * + + - - - -
          */
+
+        // Immediate
+        case 0x29:
+        break;
+
+        // Zeropage
+        case 0x25:
+        break;
+
+        // Zeropage, X
+        case 0x35:
+        break;
+
+        // Absolute
+        case 0x2D:
+        break;
+
+        // Absolute, X
+        case 0x3D:
+        break;
+
+        // Absolute, Y
+        case 0x39:
+        break;
+
+        // (Indirect, X)
+        case 0x21:
+        break;
+
+        // (Indirect), Y
+        case 0x31:
+        break;
+
+        /**
+         * ASL - Shift Left One Bit (memory or Accumulator)
+         * C <- [76543210] <- 0
+         *
+         * N Z C I D V
+         * + + + - - -
+         */
+
+        // Accumulator
+        case 0x0A:
+        break;
+
+        // Zeropage
+        case 0x06:
+        break;
+
+        // Zeropage, X
+        case 0x16:
+        break;
+
+        // Absolute
+        case 0x0E:
+        break;
+
+        // Absolute, X
+        case 0x1E:
+        break;
+
+        /**
+         * BCC - Branch on Carry Clear
+         * branch on c = 0
+         *
+         * N Z C I D V
+         * - - - - - -
+         */
+        
+        // Relative
+        case 0x90:
+            if ( !(sReg & SR_CARRY_MASK) ) {
+                count += (int8_t)(instruction & 0xFF);
+            }
+        break;
+
+        /**
+         * BCS - Branch on Carry Set 
+         * branch on c = 1
+         *
+         * N Z C I D V
+         * - - - - - -
+         */
+        
+        // Relative
+        case 0x90:
+            if ( sReg & SR_CARRY_MASK ) {
+                count += (int8_t)(instruction & 0xFF);
+            }
+        break;
+
+        /**
+         * BEQ - Branch on Result Zero 
+         * branch on z = 1
+         *
+         * N Z C I D V
+         * - - - - - -
+         */
+        
+        // Relative
+        case 0x90:
+            if ( sReg & SR_ZERO_MASK ) {
+                count += (int8_t)(instruction & 0xFF);
+            }
+        break;
+
+        /**
+         * BIT - Test Bits in Memory with Accumulator
+         * A AND M, M7 -> N, M6 -> V
+         *
+         * N  Z C I D V
+         * M7 + - - - M6
+         */
+
+        // Zeropage
+        case 0x24:
+        break;
+
+        // Absolute
+        case 0x2C:
+        break;
+
+
+        /**
+         * BMI - Branch on Result Minus
+         * branch on N = 1
+         *
+         * N Z C I D V
+         * - - - - - -
+         */
+
+        //Relative
+        case 0x30:
+        break;
+
+        /**
+         * BNE - Branch on Result not Zero
+         * Branch on Z = 0
+         *
+         * N M Z C I D V
+         * - - - - - - -
+         */
+
+        // Relative
+        case 0x30:
+        break;
+
+        /**
+         * BPL - Branch on Result Plus
+         * Branch on N = 0
+         *
+         * N M Z C I D V
+         * - - - - - - -
+         */
+
+        // Relative
+        case 0x10:
+        break;
+
+        /**
+         * BRK - Force Break
+         * I <- 1, (SP + 1) <- PC + 2, (SP + 1) <- SR
+         *
+         * N Z C I D V
+         * - - - 1 - -
+         */
+
+        // Implied
+        case 0x00:
+        break;
+
+
 
         default:
             printf("Instruction not recognized\n");
     }
+}
+
+static void adc(uint8_t value){
+
+}
+
+static void and(uint8_t value){
+    
+
 }
 
 static uint16_t* parseRomFile( char *filename ){
